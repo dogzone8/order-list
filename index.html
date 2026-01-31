@@ -136,7 +136,8 @@
     .table { width:100%; border-top:1px solid var(--line); }
     .row, .head {
       display:grid;
-      grid-template-columns: 74px 1fr 74px 96px;
+      /* Give the Item column more space on mobile; Qty is now direct input (no +/-) */
+      grid-template-columns: 64px 1fr 64px 96px;
       align-items:center;
       gap: 10px;
       padding: 10px 14px;
@@ -170,21 +171,19 @@
       background:#fff;
     }
     input[type="number"]{ text-align:center; }
+    /* Qty: direct number input (no +/-) */
     .qtybox {
-      display:grid;
-      grid-template-columns: 38px 1fr 38px;
-      gap:8px;
+      display:flex;
+      justify-content:flex-end;
       align-items:center;
     }
-    .mini {
-      width:38px; height:38px;
-      border-radius: 12px;
-      border:1px solid rgba(0,0,0,.18);
-      background:#f3f4f6;
+    .qtyInput {
+      width: 92px;
+      height: 40px;
+      text-align:center;
       font-weight:900;
       font-size:18px;
     }
-    .mini:active { transform: translateY(1px); }
     .hidden { display:none !important; }
 
     .orders { padding: 14px; border-top:1px solid var(--line); }
@@ -234,13 +233,13 @@
       .actions { gap:8px; }
       .btn { padding: 10px 10px; border-radius: 12px; }
       .row, .head {
-        grid-template-columns: 62px 1fr 62px 92px;
+        /* tighter side columns so item names fit in one line */
+        grid-template-columns: 56px 1fr 56px 92px;
         gap: 8px;
-        padding: 10px 12px;
+        padding: 10px 10px;
       }
       .itemname { font-size: 18px; }
-      .qtybox { grid-template-columns: 34px 1fr 34px; gap:6px; }
-      .mini { width:34px; height:34px; border-radius: 12px; }
+      .qtyInput { width: 92px; height: 42px; font-size: 18px; }
       select, input[type="number"], input[type="text"] { padding: 10px 8px; border-radius: 12px; }
       .grid3 { grid-template-columns: 1fr; }
       .grid2 { grid-template-columns: 1fr; }
@@ -256,8 +255,9 @@
     @media print {
       @page { margin: 0.45in; }
       body { background:#fff !important; }
-      body.printing #printArea { font-size: 20pt; }
-      .pTitle { font-weight: 900; font-size: 16pt; margin-bottom: 10pt; }
+      /* ~30% bigger than before for readability */
+      body.printing #printArea { font-size: 26pt; }
+      .pTitle { font-weight: 900; font-size: 20pt; margin-bottom: 12pt; }
       .pCols { column-count: 2; column-gap: 28pt; }
       .pVendor { break-inside: avoid; margin-bottom: 10pt; }
       .pVendor .v { font-weight: 900; font-size: 18pt; margin: 0 0 6pt; }
@@ -357,7 +357,7 @@
 
 <script>
 (() => {
-  const APP_VERSION = "V10 2026-01-30 (PWA Test)";
+  const APP_VERSION = "V11 2026-01-30 (PWA Test)";
   const STORAGE_KEY = "orderlist_state"; // keep stable key so upgrades keep data
 
   const $ = (s) => document.querySelector(s);
@@ -499,30 +499,26 @@
       };
       ord.appendChild(ordSel);
 
-      // Qty
+      // Qty (direct entry on mobile)
       const qty = document.createElement("div");
-      const qb = document.createElement("div");
-      qb.className = "qtybox";
-      const bMinus = document.createElement("button");
-      bMinus.className = "mini";
-      bMinus.textContent = "−";
       const inp = document.createElement("input");
+      inp.className = "qtyInput";
       inp.type = "number";
+      inp.inputMode = "decimal";
       inp.step = "0.5";
       inp.min = "0";
+      inp.placeholder = "0";
       inp.value = String(it.qty ?? 0);
-      const bPlus = document.createElement("button");
-      bPlus.className = "mini";
-      bPlus.textContent = "+";
-
-      bMinus.onclick = () => { it.qty = clampQty((it.qty || 0) - 0.5); inp.value = it.qty; saveState(); };
-      bPlus.onclick = () => { it.qty = clampQty((it.qty || 0) + 0.5); inp.value = it.qty; saveState(); };
-      inp.onchange = () => { it.qty = clampQty(inp.value); inp.value = it.qty; saveState(); };
-
-      qb.appendChild(bMinus);
-      qb.appendChild(inp);
-      qb.appendChild(bPlus);
-      qty.appendChild(qb);
+      // keep UX nice on iPhone: tap -> number pad, select all
+      inp.onfocus = () => inp.select();
+      const commitQty = () => {
+        it.qty = clampQty(inp.value);
+        inp.value = String(it.qty);
+        saveState();
+      };
+      inp.oninput = commitQty;
+      inp.onchange = commitQty;
+      qty.appendChild(inp);
 
       row.appendChild(pref);
       row.appendChild(itemCell);
