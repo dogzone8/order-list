@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Order List — V6 2026-01-30 (PWA Final)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Order List — V7 2026-01-30 (PWA Final)</title>
   <style>
 :root{
   --bg:#0b1220;
@@ -495,7 +495,86 @@ select:hover{border-color: rgba(37,99,235,.35) !important;}
 
 
 
-  </style>
+  
+/* === V7 Mobile polish === */
+html, body { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+* { -webkit-tap-highlight-color: rgba(0,0,0,0); }
+button, a, .pill { touch-action: manipulation; }
+@media (max-width: 600px) {
+  /* iOS form controls: avoid zoom */
+  input, select, textarea { font-size: 16px !important; }
+}
+
+/* Home item cards (no horizontal scroll) */
+.itemsWrap { width: 100%; }
+.itemsList { display: flex; flex-direction: column; gap: 10px; }
+
+.itemCard {
+  background: #ffffff;
+  border: 1px solid #e6e8ee;
+  border-radius: 18px;
+  padding: 12px 12px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  display: grid;
+  grid-template-columns: 96px 1fr 108px 140px;
+  grid-template-areas: "pref name order qty";
+  align-items: center;
+  column-gap: 10px;
+}
+.itemName {
+  grid-area: name;
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.prefCol { grid-area: pref; }
+.orderCol { grid-area: order; justify-self: end; }
+.qtyCol {
+  grid-area: qty;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.qtyBtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+}
+.qtyVal {
+  min-width: 44px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 20px;
+}
+.selCompact {
+  height: 42px;
+  border-radius: 14px;
+  padding: 0 10px;
+}
+
+@media (max-width: 600px) {
+  .itemCard {
+    grid-template-columns: 96px 1fr;
+    grid-template-areas:
+      "name name"
+      "pref order"
+      "qty qty";
+    row-gap: 10px;
+    padding: 14px 12px;
+  }
+  .itemName { font-size: 22px; }
+  .orderCol { justify-self: end; }
+  .qtyCol { justify-self: end; }
+}
+
+/* hide old table header if present */
+.itemsTableHeader { display:none !important; }
+
+</style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -518,7 +597,7 @@ select:hover{border-color: rgba(37,99,235,.35) !important;}
       <div class="brand__icon">📦</div>
       <div class="brand__text">
         <div class="brand__title">Order List</div>
-        <div class="brand__sub">V6 2026-01-30 (PWA Final)</div>
+        <div class="brand__sub">V7 2026-01-30 (PWA Final)</div>
       </div>
     </div>
 
@@ -538,7 +617,7 @@ select:hover{border-color: rgba(37,99,235,.35) !important;}
       </div>
 
       <div id="homeVendorQuick" class="quickVendors"></div>
-      <div id="itemsList" class="list"></div>
+      <div id="itemsList" class="itemsList"></div>
     </section>
 
     <!-- ORDERS -->
@@ -641,7 +720,7 @@ select:hover{border-color: rgba(37,99,235,.35) !important;}
 
 
 (() => {
-  const APP_VERSION = "V6 2026-01-30 (PWA Final)";
+  const APP_VERSION = "V7 2026-01-30 (PWA Final)";
   const STORAGE_KEY = "inventory_order_app_test";
   const QTY_STEPS = [0, 0.5, 1, 2, 3, 4, 5];
   const SEED_VENDORS = ["Mutual", "Nishimoto", "Resturant Depot", "H Mart", "Sam's Club", "Walmart"];
@@ -1021,6 +1100,49 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Ar
 <body onload="window.print()">
 <div class="hdr">${escapeHtml(title)} • ${escapeHtml(stamp)}</div>
 <div class="wrap"><div class="cols">${blocks}</div></div>
+<script>
+
+/* === V7: prevent iOS double-tap zoom on non-input controls === */
+(function(){
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', function(e){
+    const now = Date.now();
+    const t = e.target;
+    const isForm = t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA');
+    if (!isForm && (now - lastTouchEnd) <= 300) {
+      e.preventDefault();
+    }
+    lastTouchEnd = now;
+  }, {passive:false});
+  document.addEventListener('dblclick', function(e){ e.preventDefault(); }, {passive:false});
+})();
+
+/* === V7: print using hidden iframe (no extra tab) === */
+function printHtmlInIframe(html){
+  let frame = document.getElementById('printFrame');
+  if (!frame){
+    frame = document.createElement('iframe');
+    frame.id = 'printFrame';
+    frame.style.position = 'fixed';
+    frame.style.right = '0';
+    frame.style.bottom = '0';
+    frame.style.width = '0';
+    frame.style.height = '0';
+    frame.style.border = '0';
+    frame.setAttribute('aria-hidden','true');
+    document.body.appendChild(frame);
+  }
+  const doc = frame.contentDocument || frame.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+  setTimeout(()=>{
+    frame.contentWindow.focus();
+    frame.contentWindow.print();
+  }, 50);
+}
+
+</script>
 </body>
 </html>`;
 
@@ -1153,15 +1275,15 @@ function matchesHomeVendorFilter(it, filterVid) {
       const orderId = it.orderVendorId ?? prefId ?? null;
       const qty = clampQty(it.qty || 0);
       return (
-        '<div class="itemRow" data-item="' + it.id + '">' +
+        '<div class="itemCard" data-item="' + it.id + '">' +
           '<div class="cell colVendor"><select class="vendorSel" data-act="prefVendor">' + vendorOptionsShort(prefId) + '</select></div>' +
           '<div class="cell itemCell">' + escapeHtml(it.name) + '</div>' +
           '<div class="cell colVendor"><select class="vendorSel" data-act="orderVendor">' + vendorOptionsShort(orderId) + '</select></div>' +
           '<div class="cell colQty">' +
             '<div class="qtyCtl">' +
-              '<button class="btn btn--ghost qtyBtn" data-act="qtyMinus" type="button">−</button>' +
+              '<button class="btn btn--ghost qtyBtn" data-act="qtyMinus" class="qtyBtn" type="button">−</button>' +
               '<div class="qtyVal" data-act="qtyVal">' + escapeHtml(String(qty)) + '</div>' +
-              '<button class="btn btn--ghost qtyBtn" data-act="qtyPlus" type="button">+</button>' +
+              '<button class="btn btn--ghost qtyBtn" data-act="qtyPlus" class="qtyBtn" type="button">+</button>' +
             '</div>' +
           '</div>' +
         '</div>'
@@ -1185,8 +1307,8 @@ function matchesHomeVendorFilter(it, filterVid) {
       const prefSel = row.querySelector('select[data-act="prefVendor"]');
       const ordSel  = row.querySelector('select[data-act="orderVendor"]');
       const qtyVal  = row.querySelector('[data-act="qtyVal"]');
-      const minus   = row.querySelector('button[data-act="qtyMinus"]');
-      const plus    = row.querySelector('button[data-act="qtyPlus"]');
+      const minus   = row.querySelector('button[data-act="qtyMinus" class="qtyBtn"]');
+      const plus    = row.querySelector('button[data-act="qtyPlus" class="qtyBtn"]');
 
       prefSel.addEventListener("change", () => {
         setPreferredVendor(itemId, prefSel.value || null);

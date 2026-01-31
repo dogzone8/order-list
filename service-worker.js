@@ -1,5 +1,5 @@
 /* Order List V6 2026-01-30 (PWA Final) */
-const const CACHE_NAME = "order-list-pwa-v6-2026-01-30";
+const const CACHE_NAME = "order-list-pwa-v7-2026-01-30";
 const PRECACHE_URLS = [
   "./",
   "./index.html",
