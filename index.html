@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Order List">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icons/favicon-32.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <title>Order List</title>
+  <style>
+    :root {
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --line:#d3d7df;
+      --text:#111827;
+      --muted:#6b7280;
+      --shadow: 0 10px 30px rgba(0,0,0,.10);
+      --radius:14px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body {
+      margin:0;
+      font-family:var(--font);
+      color:var(--text);
+      background: linear-gradient(180deg,#eef3ff 0%, #f6f8fb 40%, #f6f8fb 100%);
+      -webkit-text-size-adjust: 100%;
+      touch-action: manipulation;
+    }
+    button, a, input, select { touch-action: manipulation; }
+    .wrap {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 10px 12px 30px;
+    }
+    .topbar {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding: 8px 6px;
+    }
+    .logo {
+      width:34px; height:34px; border-radius:8px;
+      background:#fff;
+      display:flex; align-items:center; justify-content:center;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+      overflow:hidden;
+    }
+    .logo img { width:100%; height:100%; object-fit:cover; }
+    .titleblock { line-height:1.1; }
+    .titleblock .t1 { font-weight:800; font-size:18px; }
+    .titleblock .t2 { font-size:12px; color:var(--muted); margin-top:2px; }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(0,0,0,.06);
+      overflow:hidden;
+    }
+    .cardhead {
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 14px;
+    }
+    .cardhead h2 {
+      margin: 4px 0 0;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -.2px;
+    }
+    .actions {
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .btn {
+      border: 1px solid rgba(0,0,0,.12);
+      background: #fff;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor:pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,.06);
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      user-select:none;
+    }
+    .btn.primary {
+      background: rgba(25,118,210,.12);
+      border-color: rgba(25,118,210,.25);
+      color:#0b3b73;
+    }
+    .btn:active { transform: translateY(1px); }
+
+    .filters {
+      padding: 0 14px 12px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .chip {
+      border: 1px solid rgba(0,0,0,.18);
+      background: #fff;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-weight: 800;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .chip.active {
+      background: rgba(25,118,210,.12);
+      border-color: rgba(25,118,210,.35);
+      color:#0b3b73;
+    }
+    .chip small {
+      font-weight:900;
+      background: rgba(0,0,0,.06);
+      padding: 2px 7px;
+      border-radius: 999px;
+      color:#111;
+    }
+
+    .table { width:100%; border-top:1px solid var(--line); }
+    .row, .head {
+      display:grid;
+      /* Give the Item column more space on mobile; Qty is now direct input (no +/-) */
+      grid-template-columns: 64px 1fr 64px 96px;
+      align-items:center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--line);
+      background:#fff;
+    }
+    .head {
+      position:sticky;
+      top:0;
+      z-index:5;
+      background:#f8fafc;
+      font-weight:900;
+      color:#374151;
+      padding-top:12px;
+      padding-bottom:12px;
+    }
+    .cell-item { min-width: 0; }
+    .itemname {
+      font-size: 18px;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    select, input[type="number"], input[type="text"] {
+      width:100%;
+      font-size:16px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border:1px solid rgba(0,0,0,.22);
+      background:#fff;
+    }
+    input[type="number"]{ text-align:center; }
+    /* Qty: direct number input (no +/-) */
+    .qtybox {
+      display:flex;
+      justify-content:flex-end;
+      align-items:center;
+    }
+    .qtyInput {
+      width: 78px;
+      height: 40px;
+      text-align:center;
+      font-weight:900;
+      font-size:18px;
+    }
+    .hidden { display:none !important; }
+
+    .orders { padding: 14px; border-top:1px solid var(--line); }
+    .orderBar {
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      margin-bottom:12px;
+    }
+    .orderGroup {
+      border:1px solid rgba(0,0,0,.10);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      background:#fff;
+    }
+    .orderGroup h3 { margin: 0 0 8px; font-size: 18px; font-weight: 900; }
+    .orderLine { padding: 6px 0; border-top:1px dashed rgba(0,0,0,.12); font-size: 16px; font-weight: 800; }
+    .orderLine:first-of-type { border-top:none; }
+
+    .settings { padding: 14px; border-top:1px solid var(--line); }
+    .sectionTitle { font-size:16px; font-weight: 900; margin: 10px 0 8px; }
+    .grid3 { display:grid; grid-template-columns: 120px 1fr 120px; gap:10px; align-items:center; }
+    .grid2 { display:grid; grid-template-columns: 1fr 140px; gap:10px; align-items:center; }
+    .listCard { border:1px solid rgba(0,0,0,.10); border-radius: 12px; padding: 10px; margin-top:10px; background:#fff; }
+    .listRow {
+      display:grid;
+      grid-template-columns: 44px 1fr 120px 140px;
+      gap:10px;
+      align-items:center;
+      padding: 8px 0;
+      border-top: 1px dashed rgba(0,0,0,.12);
+    }
+    .listRow:first-child { border-top:none; }
+    .badge {
+      width:40px;height:40px;border-radius:12px;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:900;background:#e5f1ff;color:#0b3b73;border:1px solid rgba(25,118,210,.25);
+    }
+    .lockline { display:flex; align-items:center; gap:8px; justify-content:flex-end; font-weight:800; color:#374151; }
+    .danger { background:#ffe7e7; border-color:#ffb4b4; }
+
+    @media (max-width: 520px) {
+      .wrap { padding: 8px 10px 22px; }
+      .cardhead { padding: 12px; }
+      .actions { gap:8px; }
+      .btn { padding: 10px 10px; border-radius: 12px; }
+      .row, .head {
+        /* tighter side columns so item names fit in one line */
+        grid-template-columns: 56px 1fr 56px 92px;
+        gap: 8px;
+        padding: 10px 10px;
+      }
+      .itemname { font-size: 18px; }
+      .qtyInput { width: 78px; height: 42px; font-size: 18px; }
+      select, input[type="number"], input[type="text"] { padding: 10px 8px; border-radius: 12px; }
+      .grid3 { grid-template-columns: 1fr; }
+      .grid2 { grid-template-columns: 1fr; }
+      .listRow { grid-template-columns: 40px 1fr; }
+      .lockline { justify-content:flex-start; }
+    }
+
+    /* Print (no new tab) */
+    body.printing { background:#fff !important; }
+    #printArea { display:none; }
+    body.printing #app { display:none; }
+    body.printing #printArea { display:block; padding: 18px; font-family: var(--font); color:#000; }
+    @media print {
+      @page { margin: 0.45in; }
+      body { background:#fff !important; }
+      /* ~30% bigger than before for readability */
+      body.printing #printArea { font-size: 26pt; }
+      .pTitle { font-weight: 900; font-size: 20pt; margin-bottom: 12pt; }
+      .pCols { column-count: 2; column-gap: 28pt; }
+      .pVendor { break-inside: avoid; margin-bottom: 10pt; }
+      .pVendor .v { font-weight: 900; font-size: 18pt; margin: 0 0 6pt; }
+      .pVendor .l { margin: 0 0 4pt; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="logo" aria-hidden="true"><img src="icons/icon-72x72.png" alt=""></div>
+    <div class="titleblock">
+      <div class="t1">Order List</div>
+      <div class="t2">V10 2026-01-30 (PWA Test)</div>
+    </div>
+  </div>
+
+  <div id="app" class="card">
+    <div class="cardhead">
+      <div><h2>모바일 주문 앱</h2></div>
+      <div class="actions">
+        <button class="btn primary" id="btnOrders">📋 주문 내역 보기</button>
+        <button class="btn" id="btnClear">🧹 클리어</button>
+        <button class="btn" id="btnSettings">⚙️ 설정</button>
+      </div>
+    </div>
+
+    <div id="viewHome">
+      <div class="filters" id="filters"></div>
+      <div class="table">
+        <div class="head">
+          <div>추천</div>
+          <div>품목</div>
+          <div>벤더</div>
+          <div>수량</div>
+        </div>
+        <div id="rows"></div>
+      </div>
+    </div>
+
+    <div id="viewOrders" class="hidden">
+      <div class="orders">
+        <div class="orderBar">
+          <button class="btn" id="btnBackHome">🏠 홈</button>
+          <button class="btn primary" id="btnPrintAll">🖨️ 프린트</button>
+        </div>
+        <div id="ordersList"></div>
+      </div>
+    </div>
+
+    <div id="viewSettings" class="hidden">
+      <div class="settings">
+        <div class="orderBar" style="justify-content:flex-start">
+          <button class="btn" id="btnBackHome2">🏠 홈</button>
+        </div>
+
+        <div class="sectionTitle">아이템 추가</div>
+        <div class="grid3">
+          <select id="addPref"></select>
+          <input id="addItemName" type="text" placeholder="예: Tuna Saku" />
+          <select id="addOrder"></select>
+        </div>
+        <div style="margin-top:10px;">
+          <button class="btn primary" id="btnAddItem">+ 아이템 추가</button>
+        </div>
+
+        <div class="sectionTitle" style="margin-top:18px;">벤더 추가</div>
+        <div class="grid2">
+          <input id="addVendorName" type="text" placeholder="예: Mutual" />
+          <input id="addVendorInitial" type="text" placeholder="이니셜 (예: M)" maxlength="3" />
+        </div>
+        <div style="margin-top:10px;">
+          <button class="btn primary" id="btnAddVendor">+ 벤더 추가</button>
+        </div>
+
+        <div class="sectionTitle" style="margin-top:18px;">벤더 관리</div>
+        <div class="listCard" id="vendorManage"></div>
+
+        <div class="sectionTitle" style="margin-top:18px;">아이템 관리</div>
+        <div class="listCard" id="itemManage"></div>
+
+        <div class="sectionTitle" style="margin-top:18px; color:#b91c1c;">데이터</div>
+        <div class="grid2">
+          <button class="btn" id="btnExport">⬇️ Export</button>
+          <label class="btn" for="fileImport">⬆️ Import</label>
+          <input id="fileImport" type="file" accept="application/json" class="hidden"/>
+        </div>
+        <div style="margin-top:10px;">
+          <button class="btn danger" id="btnReset">🗑️ Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="printArea"></div>
+</div>
+
+<script>
+(() => {
+  const APP_VERSION = "V12 2026-01-31 (PWA Clean)";
+  const STORAGE_KEY = "orderlist_state"; // keep stable key so upgrades keep data
+
+  const $ = (s) => document.querySelector(s);
+
+  const defaultState = {"meta":{"homeFilter":"all","homeSort":"name","lastVendorUsed":"","schema":1},"vendors":[{"id":"M","name":"Mutual","initial":"M","locked":true},{"id":"N","name":"Nishimoto","initial":"N","locked":true},{"id":"R","name":"Restaurant Depot","initial":"R","locked":true},{"id":"H","name":"H Mart","initial":"H","locked":true},{"id":"S","name":"Sam's Club","initial":"S","locked":true},{"id":"W","name":"Walmart","initial":"W","locked":true}],"items":[{"id":"it_083c5795","name":"Tuna Blue fin","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_c3ea9684","name":"Tuna Yellow Fin","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_10eaff57","name":"Ground Tuna","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_48309fa9","name":"Escolar","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_0b5b1841","name":"Smoked Salmon","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_015bb6c4","name":"Unagi","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_f7a2b4d1","name":"Sushi Ebi","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_c10a60e4","name":"Octopus","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_b0bffed1","name":"Chashu","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_506f9822","name":"Naruto Maki","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_65865d9a","name":"Green Mussel","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_5361ab01","name":"Ikura","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_43972b7b","name":"Tobiko(orange)","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_d80b51d0","name":"Tamago","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_a9591146","name":"Kani","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_cd37bd8e","name":"Mackerel","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_731ffa7c","name":"Baby Scallop","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_d196e17b","name":"Ama Ebi","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_802698cd","name":"Ika","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_313f27ae","name":"Hokkigai","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_2a62cd6d","name":"Snow Crab Leg","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_29f5c884","name":"Tsubugai","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_7094f8a4","name":"Inari","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_2cd486eb","name":"Scallop 3s","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_0eb18320","name":"Salmon","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_276c519c","name":"Yellowtail","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_3d60b7d6","name":"Albacore Tuna","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_f8fc2ac2","name":"Uni","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_42c05c47","name":"Madai","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_f67923c2","name":"Gyoza Veggi","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_b2c6d580","name":"Gyoza Chicken","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_f8245659","name":"Gyoza Pork","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_af48c6ae","name":"Gyoza Beef","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_64c5d430","name":"Seaweed Salad","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_0ad6665b","name":"Squid Salad","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_7f6dcde0","name":"Osaki Shred","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_ea8f1c81","name":"Soba Noodle","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_4ffe49c8","name":"Udon Noodle","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_e03a465e","name":"Ramen Noodle","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_06fe23ef","name":"Pork Loin","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_ec4479bc","name":"Chicken Breast","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_aba95815","name":"Shrimp 21-25","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_bafa831d","name":"Shrimp 71-90 roll","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_5b5da9fc","name":"Nobashi Shirmp","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_23a4ccbe","name":"Soft Shell Crab","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_c4355ffc","name":"Craw Fish","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_64befd0f","name":"Salmon Teriyaki 6oz","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_1310589b","name":"Calamari","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_d73b330f","name":"Sushi Nori HalF","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_87305d00","name":"Sushi Nori Full","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_1cd5a01d","name":"Soy Paper","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_0d8e6609","name":"Shichimi","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_a38b265d","name":"Eel Sauce","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_7331761c","name":"Sriracha","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_cf3263e4","name":"Rayu","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_a38936f5","name":"Yuzu","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_00d4c98c","name":"Tsuyu","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_c881a788","name":"Ponzu Vinegar","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_49365e66","name":"Japanese Dressing","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_87d04c1b","name":"Yakisoba Sauce","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_b9f28588","name":"Tonkatsu Sauce","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_a7bb72d2","name":"Hondashi","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_a2c9e887","name":"Katsuo 육수","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_11b3d588","name":"Katsuo 데코","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_456eae4c","name":"Kizami(데코김)","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_b8a42df6","name":"Furikake","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_589ca8b8","name":"Wasabi","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_37ccf764","name":"Karrage Poweder","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_ba0c1819","name":"Sweet Chilli Sauce","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_7c797cee","name":"Sesame Oil","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_9d64f1f7","name":"Sea Salt","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_116660e6","name":"Black Pepper","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_4a4792f4","name":"Cajun Powder","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_d1b149c4","name":"Baking Spray","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_45ab248d","name":"Lemon Juice 1Gal","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_6c45f45a","name":"Mayo","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_462fa5de","name":"카레 가루","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_6dce88a6","name":"Mirim","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_232d8ebc","name":"KD-39","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_9eac246c","name":"Shiragiku Vinegar","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_97c5abff","name":"Miso Soup Base","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_954b0501","name":"Soy Sauce 5gal","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_b2d26fcb","name":"Light Soy Sauce 5gal","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_f43978bd","name":"Oil","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_7e371c12","name":"Sugar","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_49f8edc3","name":"Salt","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_d49f882a","name":"Constachi","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_c4d6b1dc","name":"Panko","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_a4353f2e","name":"Tempurako","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_5cf40717","name":"Sushi Rice","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_33e707a6","name":"Edamame","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_b5ac22a0","name":"Shrimp Shumai","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_5177b4e7","name":"Takoyaki","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_14f78504","name":"Breaded Oyster","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_ab0fc06f","name":"Ika Geso","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_846b1249","name":"Spring Roll","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_50efb42d","name":"Corn","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_f6706ea3","name":"Avocado","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_6c06b27f","name":"Onion","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_97aa14d3","name":"Red Onion","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_479845e5","name":"Sushi Ginger","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_e3c76612","name":"Cream Cheese","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_2270b487","name":"Cucumber","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_ffbb7eac","name":"Green Onion","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_4459b791","name":"Lemon","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_617fec0e","name":"Carrot","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_49d3a050","name":"Jalapeno","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_6ee8dcb8","name":"Tonkotsu Ramen Base","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_3a0ab9dd","name":"Miso Ramen Base","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_54907d18","name":"Lettuce","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_6b23b661","name":"Broccoli","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_aa146572","name":"Mushroom","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_32c9bcb1","name":"Egg","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_c8a9b6b0","name":"Aquamar","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_7fb8f6b4","name":"Kanpyo","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_e15c1740","name":"Yama Gobo","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_394c4ffb","name":"Fukujin / Rakkyo","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_1d3f5ba6","name":"다진 마늘","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_9f75f8b7","name":"Butter","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_4941c19b","name":"Magarin","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_dbc4e65f","name":"Food Plastic Film 12","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_a5b3b767","name":"Food Plastic Film 18","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_d61955ac","name":"Wax Paper","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_e2c4c56d","name":"은박지 12X10.75","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_bfa3ec31","name":"쑤세미","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_ed1f5af2","name":"주방 비닐 장갑","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_2aeed787","name":"프랩 비닐백 6x3x15","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_4569283b","name":"Toilet Paper","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_8d65da9e","name":"Hand Tower","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_d74a4a12","name":"Windex","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_74f82212","name":"Dish Soap Pink","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_2a420910","name":"Crolox/화장실청소 스틱","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_423672e5","name":"Trash Bag 38-60","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_377b8655","name":"Trash Bag 33-39","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_1ce2b044","name":"Fabuloso","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_b03a1c31","name":"Degreaser","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_5903ad5d","name":"Hand Soap","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_4b7a83f3","name":"Bounty","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_9de32cc8","name":"Sauce cup 2oz","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_bd041d91","name":"Raman Togo Box","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_254634ad","name":"Bento Togo Box","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_53293ffc","name":"Sushi Togo Box A01","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_52b0a6f2","name":"Sushi Togo Box A02","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_3080dca2","name":"Sushi Togo Box A03","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_6dee421a","name":"Donburi Togo Box","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_9d1849ed","name":"미소투고 10oz","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_d82766d5","name":"물 투고컵 12oz","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_17103f8c","name":"물 투고컵 16oz","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_456d55fa","name":"샐러드투고 투명 8oz","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_eb17b94d","name":"큰투고박스 3칸","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_e8fbbb79","name":"투고 큰컵 32oz","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_87a5e51d","name":"밥 투고박스","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_89cfd792","name":"장어 덮밥 투고 RE-28","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_cc3fa521","name":"Paper Bag #2","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_afd85960","name":"Paper Bag #16","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_68c8b032","name":"Paper Bag #20","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_f3d19852","name":"Plastic Bag","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_4213024d","name":"Togo Spoon","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_caa625a1","name":"Togo Fork","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_50f9728e","name":"Togo Knife","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_ce529e06","name":"Straw","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_e46d09f5","name":"Napkin","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_eac6208c","name":"Chopstick","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_043e1c2d","name":"Soy Sauce Packet","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_3e8d7892","name":"Light Soy Packet","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_de77165e","name":"Wakame (미소미역)","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_20d3668e","name":"Sweet N Low","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_15551e30","name":"Ramune Original","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_b9eee76d","name":"Ramune Strawberry","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_6cd2b859","name":"Ramune Grape","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_70f43748","name":"Ramune Melon","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_050528e1","name":"Calpico","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_fc7fe826","name":"Calpico Soda","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_416b1fc1","name":"Calpico Strawberry","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_b3098286","name":"Calpico White peach","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_71955843","name":"Calpico Melon","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_a18598f3","name":"Calpico Mango","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_a1bc52c3","name":"Coke","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_8a22044a","name":"Diet Coke","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_c94db0b1","name":"Zero Coke","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_b6b52cb4","name":"Sprite","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_119fb7c2","name":"Fanta","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_c0a96af7","name":"Dr.Pepper","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_e96f61c7","name":"Root beer","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_d5e92720","name":"Toco Chico","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_724dbfe1","name":"Perrier","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_b7f5ff88","name":"Bottle Water","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_8ddad311","name":"Fiji Water","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_f2f4decd","name":"Milk","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_5fb14d3a","name":"Milk Choco","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_5158799f","name":"Orange Juice","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_6a175404","name":"Apple Juice","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_cdf824ff","name":"Green Tea Bottle","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_5ef9ce51","name":"Jasmine Tea Bottle","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_d6a6bc30","name":"Green Tea","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_87ced6c3","name":"Jasmine Tea","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_44231813","name":"Ice Tea","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_5b86c766","name":"꽈리고추","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_383ba0d5","name":"고구마","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_f68d8bf7","name":"호박","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_56c5af5b","name":"무","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_8f6841cb","name":"생강","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_a9d1a15b","name":"양배추","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_ed49c868","name":"배추","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_915190cb","name":"두부 Red","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_c23c6896","name":"두부 Green","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_13702f9b","name":"단무지","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_1380d914","name":"사과","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_874db5bb","name":"오렌지","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_cbab6e27","name":"불고기","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_a4834052","name":"불고기 소스","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_4ae37371","name":"만두피 5개","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_894e77f8","name":"목장갑","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_5d7e1241","name":"다시마","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_155fa2b1","name":"부탄가스","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_25839077","name":"세라뇨","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_4c4d3180","name":"라이스 패이퍼","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_6a296120","name":"아스파라거스","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_4b2dd4e3","name":"또띠아","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_fbc34dcc","name":"Mango","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_6ecd681e","name":"Ziplock","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_d8e4a0f3","name":"Olive Oil (extra)","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_8905fff1","name":"Cheese Cake","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_6476b649","name":"Cheese Cake Choco","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_152438da","name":"Crème Brulee","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_515c3dd9","name":"Mochi","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_d4fd20fb","name":"Oreo","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_4202a415","name":"Sushi Glove S","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_132a2d9c","name":"Sushi Glove M","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_ffc25620","name":"Bamboo Leaf","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_a1b66e95","name":"Galic Flake","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true},{"id":"it_dac493a0","name":"Sake","preferredVendorId":"","orderVendorId":"","qty":0,"locked":true}]};
+  let state = loadState();
+
+  
+  // Ensure new default catalog items/vendors are present (keeps your existing data)
+  (function ensureCatalog() {
+    let changed = false;
+    // Vendors by id
+    for (const v of defaultState.vendors) {
+      if (!state.vendors.some(x => x.id === v.id)) { state.vendors.push(structuredClone(v)); changed = true; }
+    }
+    // Items by name (case-insensitive)
+    const existing = new Set(state.items.map(i => String(i.name || "").toLowerCase()));
+    for (const it of defaultState.items) {
+      const key = String(it.name || "").toLowerCase();
+      if (!existing.has(key)) {
+        const copy = structuredClone(it);
+        // don't force qty/vendor on new items
+        copy.qty = 0;
+        copy.preferredVendorId = copy.preferredVendorId || "";
+        copy.orderVendorId = copy.orderVendorId || "";
+        state.items.push(copy);
+        existing.add(key);
+        changed = true;
+      }
+    }
+    if (changed) saveState();
+  })();
+
+function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return structuredClone(defaultState);
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.items) || !Array.isArray(parsed.vendors)) return structuredClone(defaultState);
+      parsed.meta = parsed.meta || {};
+      parsed.meta.version = APP_VERSION;
+      parsed.meta.homeFilter = parsed.meta.homeFilter || "all";
+      return parsed;
+    } catch (e) {
+      return structuredClone(defaultState);
+    }
+  }
+
+  function saveState() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  // View switching
+  const viewHome = $("#viewHome");
+  const viewOrders = $("#viewOrders");
+  const viewSettings = $("#viewSettings");
+
+  function showView(name) {
+    viewHome.classList.toggle("hidden", name !== "home");
+    viewOrders.classList.toggle("hidden", name !== "orders");
+    viewSettings.classList.toggle("hidden", name !== "settings");
+    if (name === "home") renderHome();
+    if (name === "orders") renderOrders();
+    if (name === "settings") renderSettings();
+  }
+
+  $("#btnOrders").addEventListener("click", () => showView("orders"));
+  $("#btnSettings").addEventListener("click", () => showView("settings"));
+  $("#btnBackHome").addEventListener("click", () => showView("home"));
+  $("#btnBackHome2").addEventListener("click", () => showView("home"));
+
+  $("#btnClear").addEventListener("click", () => {
+    if (!confirm("수량을 전부 0으로 초기화할까요?")) return;
+    state.items.forEach(it => it.qty = 0);
+    saveState();
+    renderHome();
+    alert("완료!");
+  });
+
+  // Helpers
+  function vendorById(id) {
+    return state.vendors.find(v => v.id === id) || null;
+  }
+  function vendorDisplay(id) {
+    const v = vendorById(id);
+    return v ? v.initial : "—";
+  }
+  function assignedVendorId(item) {
+    return item.orderVendorId || item.preferredVendorId || "";
+  }
+  function clampQty(x) {
+    const n = Number(x);
+    if (!isFinite(n) || n < 0) return 0;
+    return Math.round(n * 2) / 2;
+  }
+
+  // Filters
+  function renderFilters() {
+    const el = $("#filters");
+    el.innerHTML = "";
+
+    const chipAll = document.createElement("div");
+    chipAll.className = "chip" + ((state.meta.homeFilter || "all") === "all" ? " active" : "");
+    chipAll.innerHTML = `All <small>${state.items.length}</small>`;
+    chipAll.onclick = () => { state.meta.homeFilter = "all"; saveState(); renderHome(); };
+    el.appendChild(chipAll);
+
+    state.vendors.forEach(v => {
+      const cnt = state.items.filter(it => assignedVendorId(it) === v.id).length;
+      const chip = document.createElement("div");
+      chip.className = "chip" + ((state.meta.homeFilter || "all") === v.id ? " active" : "");
+      chip.innerHTML = `${v.initial} <small>${cnt}</small>`;
+      chip.onclick = () => { state.meta.homeFilter = v.id; saveState(); renderHome(); };
+      el.appendChild(chip);
+    });
+  }
+
+  // Home
+  function renderHome() {
+    renderFilters();
+    const rows = $("#rows");
+    rows.innerHTML = "";
+
+    const filter = state.meta.homeFilter || "all";
+    const list = (filter === "all") ? state.items : state.items.filter(it => assignedVendorId(it) === filter);
+
+    const vendorOptions = `<option value="">—</option>` + state.vendors.map(v => `<option value="${v.id}">${v.initial}</option>`).join("");
+
+    list.forEach(it => {
+      const row = document.createElement("div");
+      row.className = "row";
+
+      // Pref
+      const pref = document.createElement("div");
+      const prefSel = document.createElement("select");
+      prefSel.innerHTML = vendorOptions;
+      prefSel.value = it.preferredVendorId || "";
+      prefSel.onchange = () => {
+        it.preferredVendorId = prefSel.value || "";
+        if (!it.orderVendorId) it.orderVendorId = it.preferredVendorId || "";
+        saveState();
+        renderFilters();
+      };
+      pref.appendChild(prefSel);
+
+      // Item
+      const itemCell = document.createElement("div");
+      itemCell.className = "cell-item";
+      const name = document.createElement("div");
+      name.className = "itemname";
+      name.textContent = it.name;
+      name.title = it.name;
+      itemCell.appendChild(name);
+
+      // Order vendor
+      const ord = document.createElement("div");
+      const ordSel = document.createElement("select");
+      ordSel.innerHTML = vendorOptions;
+      ordSel.value = it.orderVendorId || "";
+      ordSel.onchange = () => {
+        it.orderVendorId = ordSel.value || "";
+        saveState();
+        renderFilters();
+        if (filter !== "all") renderHome();
+      };
+      ord.appendChild(ordSel);
+
+      // Qty (direct entry on mobile)
+      const qty = document.createElement("div");
+      const inp = document.createElement("input");
+      inp.className = "qtyInput";
+      inp.type = "number";
+      inp.inputMode = "decimal";
+      inp.step = "0.5";
+      inp.min = "0";
+      inp.placeholder = "0";
+      inp.value = String(it.qty ?? 0);
+      // keep UX nice on iPhone: tap -> number pad, select all
+      inp.onfocus = () => inp.select();
+      const parseQtyInput = (s) => {
+        const raw = String(s ?? "").trim().replace(",", ".");
+        if (raw === "") return 0;
+        // allow intermediate values like "0." while typing
+        if (!/^\d*(?:\.\d*)?$/.test(raw)) return null;
+        return parseFloat(raw || "0");
+      };
+      const commitQty = (finalize) => {
+        const parsed = parseQtyInput(inp.value);
+        if (parsed === null || Number.isNaN(parsed)) return;
+        if (finalize) {
+          it.qty = clampQty(parsed);
+          inp.value = String(it.qty);
+        } else {
+          it.qty = parsed;
+        }
+        saveState();
+      };
+      inp.addEventListener("input", () => commitQty(false));
+      inp.addEventListener("change", () => commitQty(true));
+      inp.addEventListener("blur", () => commitQty(true));
+      qty.appendChild(inp);
+
+      row.appendChild(pref);
+      row.appendChild(itemCell);
+      row.appendChild(ord);
+      row.appendChild(qty);
+      rows.appendChild(row);
+    });
+  }
+
+  // Orders
+  function escapeHtml(s) {
+    return String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+  }
+
+  function renderOrders() {
+    const listEl = $("#ordersList");
+    listEl.innerHTML = "";
+    const groups = new Map();
+
+    state.items.forEach(it => {
+      const q = clampQty(it.qty || 0);
+      if (q <= 0) return;
+      const vid = assignedVendorId(it);
+      if (!vid) return;
+      if (!groups.has(vid)) groups.set(vid, []);
+      groups.get(vid).push({ name: it.name, qty: q });
+    });
+
+    if (groups.size === 0) {
+      const empty = document.createElement("div");
+      empty.style.color = "var(--muted)";
+      empty.style.fontWeight = "800";
+      empty.textContent = "주문할 아이템이 없습니다. (수량 > 0)";
+      listEl.appendChild(empty);
+      return;
+    }
+
+    state.vendors.forEach(v => {
+      if (!groups.has(v.id)) return;
+      const box = document.createElement("div");
+      box.className = "orderGroup";
+      const h = document.createElement("h3");
+      h.textContent = v.initial;
+      box.appendChild(h);
+      groups.get(v.id).forEach(line => {
+        const d = document.createElement("div");
+        d.className = "orderLine";
+        d.textContent = `${line.name} x ${line.qty}`;
+        box.appendChild(d);
+      });
+      listEl.appendChild(box);
+    });
+  }
+
+  function buildPrintHTML() {
+    const dt = new Date();
+    const stamp = dt.toLocaleString();
+    const groups = new Map();
+    state.items.forEach(it => {
+      const q = clampQty(it.qty || 0);
+      if (q <= 0) return;
+      const vid = assignedVendorId(it);
+      if (!vid) return;
+      if (!groups.has(vid)) groups.set(vid, []);
+      groups.get(vid).push({ name: it.name, qty: q });
+    });
+
+    const parts = [];
+    parts.push(`<div class="pTitle">Order — All Vendors • ${stamp}</div>`);
+    parts.push(`<div class="pCols">`);
+    state.vendors.forEach(v => {
+      if (!groups.has(v.id)) return;
+      parts.push(`<div class="pVendor"><div class="v">${v.initial}</div>`);
+      groups.get(v.id).forEach(l => {
+        parts.push(`<div class="l">${escapeHtml(l.name)} x ${l.qty}</div>`);
+      });
+      parts.push(`</div>`);
+    });
+    parts.push(`</div>`);
+    return parts.join("");
+  }
+
+  $("#btnPrintAll").addEventListener("click", () => {
+    $("#printArea").innerHTML = buildPrintHTML();
+    document.body.classList.add("printing");
+    setTimeout(() => window.print(), 80);
+  });
+
+  window.addEventListener("afterprint", () => {
+    document.body.classList.remove("printing");
+    $("#printArea").innerHTML = "";
+  });
+
+  // Settings
+  function fillVendorSelect(sel) {
+    sel.innerHTML = `<option value="">—</option>` + state.vendors.map(v => `<option value="${v.id}">${v.initial} (${escapeHtml(v.name)})</option>`).join("");
+  }
+
+  function renderSettings() {
+    fillVendorSelect($("#addPref"));
+    fillVendorSelect($("#addOrder"));
+    renderVendorManage();
+    renderItemManage();
+  }
+
+  $("#btnAddVendor").addEventListener("click", () => {
+    const name = $("#addVendorName").value.trim();
+    let initial = $("#addVendorInitial").value.trim().toUpperCase();
+    if (!name) return alert("Vendor name을 입력해주세요.");
+    if (!initial) initial = name.trim().charAt(0).toUpperCase();
+    initial = initial.substring(0, 3);
+
+    let id = initial.charAt(0) || "V";
+    const baseId = id;
+    let k = 1;
+    while (state.vendors.some(v => v.id === id)) { k += 1; id = baseId + k; }
+
+    state.vendors.push({ id, name, initial: initial.charAt(0), locked: true });
+    $("#addVendorName").value = "";
+    $("#addVendorInitial").value = "";
+    saveState();
+    renderSettings();
+    renderHome();
+  });
+
+  $("#btnAddItem").addEventListener("click", () => {
+    const name = $("#addItemName").value.trim();
+    if (!name) return alert("Item name을 입력해주세요.");
+    const pref = $("#addPref").value || "";
+    const ord = $("#addOrder").value || pref || "";
+    const id = "it" + Math.random().toString(16).slice(2);
+    state.items.push({ id, name, preferredVendorId: pref, orderVendorId: ord, qty: 0, locked: true });
+    $("#addItemName").value = "";
+    saveState();
+    renderSettings();
+    renderHome();
+  });
+
+  function renderVendorManage() {
+    const box = $("#vendorManage");
+    box.innerHTML = "";
+    state.vendors.forEach((v, idx) => {
+      const row = document.createElement("div");
+      row.className = "listRow";
+
+      const badge = document.createElement("div");
+      badge.className = "badge";
+      badge.textContent = v.initial;
+      row.appendChild(badge);
+
+      const name = document.createElement("input");
+      name.type = "text";
+      name.value = v.name;
+      name.disabled = !!v.locked;
+      name.onchange = () => { v.name = name.value.trim() || v.name; saveState(); renderHome(); };
+      row.appendChild(name);
+
+      const init = document.createElement("input");
+      init.type = "text";
+      init.maxLength = 3;
+      init.value = v.initial;
+      init.disabled = !!v.locked;
+      init.onchange = () => { v.initial = (init.value.trim().toUpperCase() || v.initial).charAt(0); badge.textContent = v.initial; saveState(); renderHome(); };
+      row.appendChild(init);
+
+      const right = document.createElement("div");
+      right.style.display = "flex";
+      right.style.gap = "8px";
+      right.style.justifyContent = "flex-end";
+
+      const up = document.createElement("button");
+      up.className = "btn";
+      up.textContent = "⬆️";
+      up.onclick = () => {
+        if (idx === 0) return;
+        [state.vendors[idx - 1], state.vendors[idx]] = [state.vendors[idx], state.vendors[idx - 1]];
+        saveState(); renderSettings(); renderHome();
+      };
+
+      const down = document.createElement("button");
+      down.className = "btn";
+      down.textContent = "⬇️";
+      down.onclick = () => {
+        if (idx === state.vendors.length - 1) return;
+        [state.vendors[idx + 1], state.vendors[idx]] = [state.vendors[idx], state.vendors[idx + 1]];
+        saveState(); renderSettings(); renderHome();
+      };
+
+      const del = document.createElement("button");
+      del.className = "btn danger";
+      del.textContent = "Delete";
+      del.disabled = !!v.locked;
+      del.onclick = () => {
+        if (!confirm(`Delete vendor "${v.name}"?`)) return;
+        const vid = v.id;
+        state.items.forEach(it => {
+          if (it.preferredVendorId === vid) it.preferredVendorId = "";
+          if (it.orderVendorId === vid) it.orderVendorId = "";
+        });
+        state.vendors = state.vendors.filter(x => x.id !== vid);
+        if (state.meta.homeFilter === vid) state.meta.homeFilter = "all";
+        saveState(); renderSettings(); renderHome();
+      };
+
+      const lock = document.createElement("label");
+      lock.className = "lockline";
+      lock.innerHTML = `<input type="checkbox" ${v.locked ? "checked" : ""} /> Lock (edit/delete)`;
+      lock.querySelector("input").onchange = (e) => { v.locked = e.target.checked; saveState(); renderSettings(); };
+
+      right.appendChild(up);
+      right.appendChild(down);
+      right.appendChild(del);
+      right.appendChild(lock);
+
+      row.appendChild(right);
+      box.appendChild(row);
+    });
+  }
+
+  function renderItemManage() {
+    const box = $("#itemManage");
+    box.innerHTML = "";
+
+    const vendorSelectHTML = `<option value="">—</option>` + state.vendors.map(v => `<option value="${v.id}">${v.initial}</option>`).join("");
+
+    state.items.forEach((it, idx) => {
+      const row = document.createElement("div");
+      row.className = "listRow";
+
+      const badge = document.createElement("div");
+      badge.className = "badge";
+      badge.textContent = vendorDisplay(it.preferredVendorId || "");
+      row.appendChild(badge);
+
+      const name = document.createElement("input");
+      name.type = "text";
+      name.value = it.name;
+      name.disabled = !!it.locked;
+      name.onchange = () => { it.name = name.value.trim() || it.name; saveState(); renderHome(); };
+      row.appendChild(name);
+
+      const ord = document.createElement("select");
+      ord.innerHTML = vendorSelectHTML;
+      ord.value = it.orderVendorId || "";
+      ord.disabled = !!it.locked;
+      ord.onchange = () => { it.orderVendorId = ord.value || ""; saveState(); renderHome(); };
+      row.appendChild(ord);
+
+      const right = document.createElement("div");
+      right.style.display = "flex";
+      right.style.gap = "8px";
+      right.style.justifyContent = "flex-end";
+
+      const up = document.createElement("button");
+      up.className = "btn";
+      up.textContent = "⬆️";
+      up.onclick = () => {
+        if (idx === 0) return;
+        [state.items[idx - 1], state.items[idx]] = [state.items[idx], state.items[idx - 1]];
+        saveState(); renderSettings(); renderHome();
+      };
+
+      const down = document.createElement("button");
+      down.className = "btn";
+      down.textContent = "⬇️";
+      down.onclick = () => {
+        if (idx === state.items.length - 1) return;
+        [state.items[idx + 1], state.items[idx]] = [state.items[idx], state.items[idx + 1]];
+        saveState(); renderSettings(); renderHome();
+      };
+
+      const del = document.createElement("button");
+      del.className = "btn danger";
+      del.textContent = "Delete";
+      del.disabled = !!it.locked;
+      del.onclick = () => {
+        if (!confirm(`Delete item "${it.name}"?`)) return;
+        state.items = state.items.filter(x => x.id !== it.id);
+        saveState(); renderSettings(); renderHome();
+      };
+
+      const lock = document.createElement("label");
+      lock.className = "lockline";
+      lock.innerHTML = `<input type="checkbox" ${it.locked ? "checked" : ""} /> Lock (edit/delete)`;
+      lock.querySelector("input").onchange = (e) => { it.locked = e.target.checked; saveState(); renderSettings(); };
+
+      right.appendChild(up);
+      right.appendChild(down);
+      right.appendChild(del);
+      right.appendChild(lock);
+
+      row.appendChild(right);
+      box.appendChild(row);
+    });
+  }
+
+  // Export / Import / Reset
+  $("#btnExport").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "OrderList_" + APP_VERSION.replace(/\s+/g, "_") + ".json";
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  $("#fileImport").addEventListener("change", async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    try {
+      const txt = await f.text();
+      const parsed = JSON.parse(txt);
+      if (!parsed || !Array.isArray(parsed.items) || !Array.isArray(parsed.vendors)) throw new Error("bad");
+      parsed.meta = parsed.meta || {};
+      parsed.meta.version = APP_VERSION;
+      parsed.meta.homeFilter = parsed.meta.homeFilter || "all";
+      state = parsed;
+      saveState();
+      renderHome();
+      alert("Import 완료!");
+      showView("home");
+    } catch (err) {
+      alert("Import 실패 (JSON 확인)");
+    } finally {
+      e.target.value = "";
+    }
+  });
+
+  $("#btnReset").addEventListener("click", () => {
+    if (!confirm("Reset ALL data?")) return;
+    state = structuredClone(defaultState);
+    saveState();
+    renderHome();
+    alert("Reset 완료!");
+    showView("home");
+  });
+
+  // PWA SW
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    });
+  }
+
+  // Extra double-tap zoom guard
+  let lastTouchEnd = 0;
+  document.addEventListener("touchend", (e) => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
+
+  showView("home");
+})();
+</script>
+</body>
+</html>
