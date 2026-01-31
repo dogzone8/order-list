@@ -251,17 +251,30 @@
     body.printing { background:#fff !important; }
     #printArea { display:none; }
     body.printing #app { display:none; }
-    body.printing #printArea { display:block; padding: 18px; font-family: var(--font); color:#000; }
+    body.printing #printArea { display:block; padding: 0; font-family: var(--font); color:#000; }
     @media print {
-      @page { margin: 0.45in; }
+      /* Mobile Safari paginates earlier if margins/font are large.
+         Keep margins tight so 2-column print matches desktop as closely as possible. */
+      @page { margin: 0.25in; }
       body { background:#fff !important; }
-      /* ~30% bigger than before for readability */
-      body.printing #printArea { font-size: 26pt; }
-      .pTitle { font-weight: 900; font-size: 20pt; margin-bottom: 12pt; }
-      .pCols { column-count: 2; column-gap: 28pt; }
-      .pVendor { break-inside: avoid; margin-bottom: 10pt; }
-      .pVendor .v { font-weight: 900; font-size: 18pt; margin: 0 0 6pt; }
-      .pVendor .l { margin: 0 0 4pt; }
+      /* Print typography */
+      body.printing #printArea { font-size: 20px; line-height: 1.15; }
+      /* No header lines on print (user requested) */
+      .pTitle { display:none !important; }
+
+      /* 2-column print like desktop (force WebKit columns too) */
+      .pCols {
+        -webkit-column-count: 2;
+        column-count: 2;
+        -webkit-column-gap: 18px;
+        column-gap: 18px;
+        -webkit-column-fill: auto;
+        column-fill: auto;
+      }
+
+      .pVendor { break-inside: avoid; page-break-inside: avoid; margin: 0 0 10px; }
+      .pVendor .v { font-weight: 900; font-size: 22px; margin: 0 0 6px; }
+      .pVendor .l { margin: 0 0 3px; }
     }
   </style>
 </head>
@@ -271,7 +284,7 @@
     <div class="logo" aria-hidden="true"><img src="icons/icon-72x72.png" alt=""></div>
     <div class="titleblock">
       <div class="t1">Order List</div>
-      <div class="t2">V12 2026-01-30 </div>
+      <div class="t2">V10 2026-01-30 (PWA Test)</div>
     </div>
   </div>
 
@@ -357,7 +370,7 @@
 
 <script>
 (() => {
-  const APP_VERSION = "V12 2026-01-31 (PWA Clean)";
+  const APP_VERSION = "V13 2026-01-31 (PWA Clean)";
   const STORAGE_KEY = "orderlist_state"; // keep stable key so upgrades keep data
 
   const $ = (s) => document.querySelector(s);
