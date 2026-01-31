@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Order List — V1 2026-01-30 (PWA Final)</title>
+  <title>Order List — V2 2026-01-30 (PWA Final)</title>
   <style>
 :root{
   --bg:#0b1220;
@@ -496,19 +496,62 @@ select:hover{border-color: rgba(37,99,235,.35) !important;}
   * { box-shadow: none !important; }
 }
 </style>
+
+<style>
+/* Hide in-app version/header strip on mobile if present */
+.appVersion, .versionText, .subtitle, .subTitle { display:none !important; }
+</style>
+
+<style>
+/* --- Mobile responsiveness (PWA Final) --- */
+:root{ --mobilePad: 14px; }
+body{ -webkit-text-size-adjust: 100%; }
+
+@media (max-width: 900px){
+  .container, .wrap, .page, .card, .panel, .main { max-width: 100% !important; }
+}
+@media (max-width: 600px){
+  body{ background: #f6f9ff !important; }
+  .container, .wrap, .page, .main{
+    width: 100% !important;
+    padding: var(--mobilePad) !important;
+    margin: 0 !important;
+  }
+  .card, .panel{
+    border-radius: 14px !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,.06) !important;
+  }
+  .topActions, .actions, .headerActions, .homeActions{
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+    align-items: stretch !important;
+  }
+  .topActions button, .actions button, .headerActions button, .homeActions button,
+  .topActions .btn, .actions .btn, .headerActions .btn, .homeActions .btn{
+    width: 100% !important;
+    min-height: 46px !important;
+    font-size: 16px !important;
+  }
+  table{ width: 100% !important; }
+  th, td{ padding: 10px 8px !important; }
+  select, input, button{ font-size: 16px !important; } /* prevent iOS zoom */
+  .filters, .chips, .vendorChips{
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+    padding-bottom: 6px;
+  }
+  .filters button, .chips button, .vendorChips button{
+    display: inline-flex !important;
+    margin-right: 8px !important;
+  }
+}
+</style>
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand__icon">📦</div>
-      <div class="brand__text">
-        <div class="brand__title">Order List</div>
-        <div class="brand__sub">V1 2026-01-30 (PWA Final)</div>
-      </div>
-    </div>
+  
 
-    <div class="topbar__actions"></div>
-  </header>
 
   <main class="container">
     <!-- ITEMS -->
@@ -626,7 +669,7 @@ select:hover{border-color: rgba(37,99,235,.35) !important;}
 
 
 (() => {
-  const APP_VERSION = "V1 2026-01-30 (PWA Final)";
+  const APP_VERSION = "V2 2026-01-30 (PWA Final)";
   const STORAGE_KEY = "inventory_order_app_test";
   const QTY_STEPS = [0, 0.5, 1, 2, 3, 4, 5];
   const SEED_VENDORS = ["Mutual", "Nishimoto", "Resturant Depot", "H Mart", "Sam's Club", "Walmart"];
